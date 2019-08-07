@@ -8,7 +8,11 @@ Sample code showing how to connect to Streamloots to receive alerts for a user. 
 To use the sample with your own account, do the following steps:
 
 * Create an account / log in to Streamloots: https://www.streamloots.com/
+
 * On your dashboard, head to the Alerts section under Page Configuration
+
 * Under "Alert provider", click on the grayed out box that says "Click here to show URL"
-* Copy the GUID value at the end of your alerts URL, this is your alerts ID. The format of the URL is: https://widgets.streamloots.com/alerts/<GUID>
+
+* Copy the GUID value at the end of your alerts URL, this is your alerts ID. The format of the URL is: https://widgets.streamloots.com/alerts/< GUID >
+
 * Build the project and run it with the GUID ID as a command-line parameter
