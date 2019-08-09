@@ -34,7 +34,7 @@ namespace StreamlootsSample
             try
             {
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                Task.Run(this.BackgroundCheck, this.cancellationTokenSource.Token);
+                Task.Run(() => { this.BackgroundCheck(); }, this.cancellationTokenSource.Token);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
                 return Task.FromResult(true);
@@ -62,7 +62,7 @@ namespace StreamlootsSample
             return Task.FromResult(0);
         }
 
-        private async Task BackgroundCheck()
+        private void BackgroundCheck()
         {
             this.webRequest = WebRequest.Create(string.Format("https://widgets.streamloots.com/alerts/{0}/media-stream", this.streamlootsID));
             ((HttpWebRequest)this.webRequest).AllowReadStreamBuffering = false;
@@ -70,12 +70,13 @@ namespace StreamlootsSample
             this.responseStream = response.GetResponseStream();
 
             UTF8Encoding encoder = new UTF8Encoding();
+            string cardData = string.Empty;
             var buffer = new byte[100000];
             while (true)
             {
                 try
                 {
-                    if (this.responseStream.CanRead)
+                    while (this.responseStream.CanRead)
                     {
                         int len = this.responseStream.Read(buffer, 0, 100000);
                         if (len > 10)
@@ -83,19 +84,25 @@ namespace StreamlootsSample
                             string text = encoder.GetString(buffer, 0, len);
                             if (!string.IsNullOrEmpty(text))
                             {
-                                JObject jobj = JObject.Parse("{ " + text + " }");
-                                if (jobj != null && jobj.ContainsKey("data"))
+                                cardData += text;
+                                try
                                 {
-                                    StreamlootsCardModel card = jobj["data"].ToObject<StreamlootsCardModel>();
-                                    if (card != null)
+                                    JObject jobj = JObject.Parse("{ " + cardData + " }");
+                                    if (jobj != null && jobj.ContainsKey("data"))
                                     {
-                                        Console.WriteLine("Card Name: " + card.data.cardName);
-                                        Console.WriteLine("Card Image:" + card.imageUrl);
-                                        Console.WriteLine("Redeemed By: " + card.data.Username);
-                                        Console.WriteLine("Message: " + card.data.Message);
-                                        Console.WriteLine();
+                                        cardData = string.Empty;
+                                        StreamlootsCardModel card = jobj["data"].ToObject<StreamlootsCardModel>();
+                                        if (card != null)
+                                        {
+                                            Console.WriteLine("Card Name: " + card.data.cardName);
+                                            Console.WriteLine("Card Image:" + card.imageUrl);
+                                            Console.WriteLine("Redeemed By: " + card.data.Username);
+                                            Console.WriteLine("Message: " + card.data.Message);
+                                            Console.WriteLine();
+                                        }
                                     }
                                 }
+                                catch (Exception) { }   // To handle the case where partial packet data is received
                             }
                         }
                     }
@@ -104,7 +111,6 @@ namespace StreamlootsSample
                 {
                     Console.WriteLine(ex.ToString());
                 }
-                await Task.Delay(1000);
             }
         }
 
