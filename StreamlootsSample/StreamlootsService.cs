@@ -91,14 +91,21 @@ namespace StreamlootsSample
                                     if (jobj != null && jobj.ContainsKey("data"))
                                     {
                                         cardData = string.Empty;
-                                        StreamlootsCardModel card = jobj["data"].ToObject<StreamlootsCardModel>();
-                                        if (card != null)
+                                        if (jobj.Value<JObject>("data").ContainsKey("data") && jobj.Value<JObject>("data").Value<JObject>("data").ContainsKey("type"))
                                         {
-                                            Console.WriteLine("Card Name: " + card.data.cardName);
-                                            Console.WriteLine("Card Image:" + card.imageUrl);
-                                            Console.WriteLine("Redeemed By: " + card.data.Username);
-                                            Console.WriteLine("Message: " + card.data.Message);
-                                            Console.WriteLine();
+                                            var type = jobj.Value<JObject>("data").Value<JObject>("data").Value<string>("type");
+                                            switch (type.ToLower())
+                                            {
+                                                case "purchase":
+                                                    this.ProcessChestPurchase(jobj);
+                                                    break;
+                                                case "redemption":
+                                                    this.ProcessCardRedemption(jobj);
+                                                    break;
+                                                default:
+                                                    Console.WriteLine($"Unknown Streamloots packet type: {type}");
+                                                    break;
+                                            }
                                         }
                                     }
                                 }
@@ -111,6 +118,31 @@ namespace StreamlootsSample
                 {
                     Console.WriteLine(ex.ToString());
                 }
+            }
+        }
+
+        private void ProcessChestPurchase(JObject jobj)
+        {
+            var purchase = jobj["data"].ToObject<StreamlootsPurchaseModel>();
+            if (purchase != null)
+            {
+                Console.WriteLine("Purchase By: " + purchase.data.Username);
+                Console.WriteLine("Gifted By: " + ((!string.IsNullOrEmpty(purchase.data.Giftee)) ? purchase.data.Giftee : "NONE"));
+                Console.WriteLine("Quantity: " + purchase.data.Quantity);
+                Console.WriteLine();
+            }
+        }
+
+        private void ProcessCardRedemption(JObject jobj)
+        {
+            StreamlootsCardModel card = jobj["data"].ToObject<StreamlootsCardModel>();
+            if (card != null)
+            {
+                Console.WriteLine("Card Name: " + card.data.cardName);
+                Console.WriteLine("Card Image:" + card.imageUrl);
+                Console.WriteLine("Redeemed By: " + card.data.Username);
+                Console.WriteLine("Message: " + card.data.Message);
+                Console.WriteLine();
             }
         }
 
